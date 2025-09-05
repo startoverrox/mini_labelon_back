@@ -94,6 +94,8 @@ class TokenRefreshView(TokenRefreshView):
 
 class RegisterView(generics.CreateAPIView):
     permission_classes = (AllowAny,)
+    queryset = Member.objects.all()
+    serializer_class = CreateMemberSerializer
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
