@@ -1,0 +1,15 @@
+# Mini Labelon Backend
+
+## .env
+
+```
+# Development Environment
+DEBUG=True
+SECRET_KEY=django-insecure-qhl01mqc7^a)b8voa(5atg&bd@edietwkh4s(z&4(+c7c7s*2j
+
+# Database
+DATABASE_URL=postgres://mini-labelon:dbzmfflem1!@localhost:5432/mini-labelon
+
+# Allowed Hosts
+ALLOWED_HOSTS=localhost,127.0.0.1
+```
