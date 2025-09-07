@@ -1,6 +1,7 @@
 import datetime
 
 from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
@@ -29,17 +30,60 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
 
 class CreateMemberSerializer(serializers.ModelSerializer):
     password = serializers.CharField(
-        write_only=True, required=True, validators=[validate_password]
+        write_only=True,
+        required=True,
+        error_messages={
+            "required": "비밀번호를 입력해주세요.",
+            "blank": "비밀번호를 입력해주세요.",
+        },
     )
-    password_confirm = serializers.CharField(write_only=True, required=True)
+    password_confirm = serializers.CharField(
+        write_only=True,
+        required=True,
+        error_messages={
+            "required": "비밀번호 확인을 입력해주세요.",
+            "blank": "비밀번호 확인을 입력해주세요.",
+        },
+    )
 
     class Meta:
         model = Member
         fields = ["id", "role", "name", "email", "password", "password_confirm"]
+        extra_kwargs = {
+            "email": {
+                "validators": [],
+                "error_messages": {
+                    "required": "이메일을 입력해주세요.",
+                    "invalid": "올바른 이메일 형식을 입력해주세요.",
+                    "blank": "이메일을 입력해주세요.",
+                },
+            },
+            "name": {
+                "error_messages": {
+                    "required": "이름을 입력해주세요.",
+                    "blank": "이름을 입력해주세요.",
+                }
+            },
+            "role": {
+                "error_messages": {
+                    "required": "역할을 선택해주세요.",
+                    "blank": "역할을 선택해주세요.",
+                }
+            },
+        }
 
     def validate_email(self, value):
         if Member.objects.filter(email=value).exists():
             raise serializers.ValidationError("이미 존재하는 이메일입니다.")
+        return value
+
+    def validate_password(self, value):
+        try:
+            validate_password(value)
+        except DjangoValidationError:
+            raise serializers.ValidationError(
+                "비밀번호가 보안 요구사항을 충족하지 않습니다. (8자 이상, 숫자, 문자, 특수문자 포함)"
+            )
         return value
 
     def validate(self, attrs):

@@ -20,20 +20,14 @@ class LoginView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer
 
     def post(self, request, *args, **kwargs):
-        response = super().post(request, *args, **kwargs)
+        try:
+            response = super().post(request, *args, **kwargs)
 
-        if response.status_code == 200:
             access_token = response.data.get("access")
             refresh_token = response.data.pop("refresh")
 
             refresh_lifetime = settings.SIMPLE_JWT.get("REFRESH_TOKEN_LIFETIME")
             expiry = int(refresh_lifetime.total_seconds())
-
-            response.data = {
-                "success": True,
-                "message": "로그인 성공",
-                "data": {"access": access_token},
-            }
 
             response.set_cookie(
                 key="refreshToken",
@@ -43,41 +37,57 @@ class LoginView(TokenObtainPairView):
                 path="/",
                 max_age=expiry,
             )
-        else:
-            response.data = {
-                "success": False,
-                "message": "아이디 또는 비밀번호가 올바르지 않습니다.",
-            }
 
-        return response
+            result = dict(
+                success=True,
+                message="로그인 성공",
+                data={"access": access_token},
+            )
+            response.data = result
+
+            return response
+
+        except Exception:
+            result = dict(
+                success=False,
+                message="아이디 또는 비밀번호가 올바르지 않습니다.",
+            )
+            return Response(result, status=status.HTTP_400_BAD_REQUEST)
 
 
 class LogoutView(APIView):
     permission_classes = (AllowAny,)
 
-    def post(self, request):
-        response = Response(
-            {"success": True, "message": "로그아웃 성공"},
-            status=status.HTTP_200_OK,
-        )
-
-        # cookie 제거
-        response.delete_cookie(key="refreshToken", path="/")
-        return response
+    @staticmethod
+    def post(request):
+        try:
+            result = dict(success=True, message="로그아웃 성공")
+            response = Response(
+                result,
+                status=status.HTTP_200_OK,
+            )
+            # cookie 제거
+            response.delete_cookie(key="refreshToken", path="/")
+            return response
+        except Exception:
+            result = dict(success=False, message="로그아웃 실패")
+            return Response(result, status=status.HTTP_400_BAD_REQUEST)
 
 
 class TokenRefreshView(TokenRefreshView):
     permission_classes = (AllowAny,)
 
-    def post(self, request, *args, **kwargs):
+    @staticmethod
+    def post(request, *args, **kwargs):
         refresh_token = request.COOKIES.get("refreshToken")
 
         if not refresh_token:
+            result = dict(
+                success=False,
+                message=r"인증이 만료되었습니다.\n다시 로그인 해주세요.",
+            )
             return Response(
-                {
-                    "success": False,
-                    "message": r"인증이 만료되었습니다.\n다시 로그인 해주세요.",
-                },
+                result,
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -87,7 +97,7 @@ class TokenRefreshView(TokenRefreshView):
         response = super().post(request, *args, **kwargs)
 
         if response.status_code == 200:
-            response.data = {"data": response.data}
+            response.data = dict(success=True, data=response.data)
 
         return response
 
@@ -102,20 +112,19 @@ class RegisterView(generics.CreateAPIView):
         if serializer.is_valid():
             serializer.save()
             return Response(
-                {
-                    "success": True,
-                    "data": serializer.data,
-                    "message": "회원가입 성공",
-                },
+                dict(
+                    success=True,
+                    data=serializer.data,
+                    message="회원가입 성공",
+                ),
                 status=status.HTTP_201_CREATED,
             )
-
-        return Response(
-            {
-                "success": False,
-                "data": serializer.data,
-                "message": "회원가입 실패",
-                "errors": serializer.errors,
-            },
-            status=status.HTTP_400_BAD_REQUEST,
-        )
+        else:
+            return Response(
+                dict(
+                    success=False,
+                    message="회원가입 실패",
+                    errors=serializer.errors,
+                ),
+                status=status.HTTP_400_BAD_REQUEST,
+            )
