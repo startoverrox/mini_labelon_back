@@ -46,32 +46,6 @@ class CreateMemberSerializer(serializers.ModelSerializer):
         },
     )
 
-    class Meta:
-        model = Member
-        fields = ["id", "role", "name", "email", "password", "password_confirm"]
-        extra_kwargs = {
-            "email": {
-                "validators": [],
-                "error_messages": {
-                    "required": "이메일을 입력해주세요.",
-                    "invalid": "올바른 이메일 형식을 입력해주세요.",
-                    "blank": "이메일을 입력해주세요.",
-                },
-            },
-            "name": {
-                "error_messages": {
-                    "required": "이름을 입력해주세요.",
-                    "blank": "이름을 입력해주세요.",
-                }
-            },
-            "role": {
-                "error_messages": {
-                    "required": "역할을 선택해주세요.",
-                    "blank": "역할을 선택해주세요.",
-                }
-            },
-        }
-
     def validate_email(self, value):
         if Member.objects.filter(email=value).exists():
             raise serializers.ValidationError("이미 존재하는 이메일입니다.")
@@ -104,3 +78,29 @@ class CreateMemberSerializer(serializers.ModelSerializer):
         member.set_password(validated_data["password"])
         member.save()
         return member
+
+    class Meta:
+        model = Member
+        fields = ["id", "role", "name", "email", "password", "password_confirm"]
+        extra_kwargs = {
+            "email": {
+                "validators": [],
+                "error_messages": {
+                    "required": "이메일을 입력해주세요.",
+                    "invalid": "올바른 이메일 형식을 입력해주세요.",
+                    "blank": "이메일을 입력해주세요.",
+                },
+            },
+            "name": {
+                "error_messages": {
+                    "required": "이름을 입력해주세요.",
+                    "blank": "이름을 입력해주세요.",
+                }
+            },
+            "role": {
+                "error_messages": {
+                    "required": "역할을 선택해주세요.",
+                    "blank": "역할을 선택해주세요.",
+                }
+            },
+        }
